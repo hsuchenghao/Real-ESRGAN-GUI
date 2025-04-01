@@ -1,34 +1,14 @@
-name: Build Real-ESRGAN-GUI
+name: Build Windows Executable
 
 on:
   push:
     branches:
       - main
   workflow_dispatch:
-    inputs:
-      build_platform:
-        description: '选择构建平台 (windows/linux/macos)'
-        required: true
-        default: 'windows'
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: windows-latest
-            platform: windows
-            build_command: flutter build windows --release
-            artifact_path: build/windows/runner/Release/
-          - os: ubuntu-latest
-            platform: linux
-            build_command: flutter build linux --release
-            artifact_path: build/linux/x64/release/bundle/
-          - os: macos-latest
-            platform: macos
-            build_command: flutter build macos --release
-            artifact_path: build/macos/Build/Products/Release/
+  build-windows:
+    runs-on: windows-latest
 
     steps:
       - name: 检出代码
@@ -42,11 +22,11 @@ jobs:
       - name: 安装依赖
         run: flutter pub get
 
-      - name: 构建可执行文件
-        run: ${{ matrix.build_command }}
+      - name: 构建 Windows 可执行文件
+        run: flutter build windows --release
 
       - name: 上传构建产物
         uses: actions/upload-artifact@v4
         with:
-          name: real-esrgan-gui-build-${{ matrix.platform }}
-          path: ${{ matrix.artifact_path }}
+          name: real-esrgan-gui-windows-build
+          path: build/windows/runner/Release/
