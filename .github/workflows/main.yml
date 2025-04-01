@@ -1,15 +1,15 @@
 name: Build Real-ESRGAN-GUI
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       build_platform:
         description: '选择构建平台 (windows/linux/macos)'
         required: true
         default: 'windows'
-  push:
-    branches:
-      - main
 
 jobs:
   build:
@@ -19,10 +19,16 @@ jobs:
         include:
           - os: windows-latest
             platform: windows
+            build_command: flutter build windows --release
+            artifact_path: build/windows/runner/Release/
           - os: ubuntu-latest
             platform: linux
+            build_command: flutter build linux --release
+            artifact_path: build/linux/x64/release/bundle/
           - os: macos-latest
             platform: macos
+            build_command: flutter build macos --release
+            artifact_path: build/macos/Build/Products/Release/
 
     steps:
       - name: 检出代码
@@ -37,19 +43,10 @@ jobs:
         run: flutter pub get
 
       - name: 构建可执行文件
-        if: ${{ github.event_name == 'push' || github.event.inputs.build_platform == matrix.platform }}
-        run: |
-          if [ "${{ matrix.platform }}" == "windows" ]; then
-            flutter build windows --release
-          elif [ "${{ matrix.platform }}" == "linux" ]; then
-            flutter build linux --release
-          elif [ "${{ matrix.platform }}" == "macos" ]; then
-            flutter build macos --release
-          fi
+        run: ${{ matrix.build_command }}
 
       - name: 上传构建产物
-        if: ${{ github.event_name == 'push' || github.event.inputs.build_platform == matrix.platform }}
         uses: actions/upload-artifact@v4
         with:
           name: real-esrgan-gui-build-${{ matrix.platform }}
-          path: build/${{ matrix.platform }}/runner/Release/
+          path: ${{ matrix.artifact_path }}
