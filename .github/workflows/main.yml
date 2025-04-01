@@ -1,31 +1,58 @@
 name: Build Real-ESRGAN-GUI
 
 on:
+  workflow_dispatch: # 添加手动触发事件
+    inputs:
+      build_platform:
+        description: '选择构建平台 (windows/linux/macos)'
+        required: true
+        default: 'windows'
   push:
     branches:
       - main
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+          - os: ubuntu-latest
+            platform: linux
+          - os: macos-latest
+            platform: macos
+
+    if: github.event_name == 'push' || github.event.inputs.build_platform == matrix.platform
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - name: 检出代码
+        uses: actions/checkout@v3
 
-      - name: Set up Flutter
+      - name: 设置 Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.0.0'
 
-      - name: Install dependencies
+      - name: 安装依赖
         run: flutter pub get
 
-      - name: Build executable
-        run: flutter build windows --release
+      - name: 构建可执行文件
+        run: |
+          if [ "${{ matrix.platform }}" == "windows" ]; then
+            flutter build windows --release
+          elif [ "${{ matrix.platform }}" == "linux" ]; then
+            flutter build linux --release
+          elif [ "${{ matrix.platform }}" == "macos" ]; then
+            flutter build macos --release
+          fi
 
-      - name: Upload build artifacts
+      - name: 上传构建产物
         uses: actions/upload-artifact@v4
         with:
-          name: real-esrgan-gui-build
-          path: build/windows/runner/Release/
+          name: real-esrgan-gui-build-${{ matrix.platform }}
+          path: |
+            build/${{ matrix.platform }}/runner/Release/
+            build/${{ matrix.platform }}/runner/Release/**/*
