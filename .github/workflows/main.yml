@@ -1,7 +1,7 @@
 name: Build Real-ESRGAN-GUI
 
 on:
-  workflow_dispatch: # 添加手动触发事件
+  workflow_dispatch:
     inputs:
       build_platform:
         description: '选择构建平台 (windows/linux/macos)'
@@ -14,7 +14,6 @@ on:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-
     strategy:
       matrix:
         include:
@@ -24,8 +23,6 @@ jobs:
             platform: linux
           - os: macos-latest
             platform: macos
-
-    if: github.event_name == 'push' || github.event.inputs.build_platform == matrix.platform
 
     steps:
       - name: 检出代码
@@ -40,6 +37,7 @@ jobs:
         run: flutter pub get
 
       - name: 构建可执行文件
+        if: ${{ github.event_name == 'push' || github.event.inputs.build_platform == matrix.platform }}
         run: |
           if [ "${{ matrix.platform }}" == "windows" ]; then
             flutter build windows --release
@@ -50,9 +48,8 @@ jobs:
           fi
 
       - name: 上传构建产物
+        if: ${{ github.event_name == 'push' || github.event.inputs.build_platform == matrix.platform }}
         uses: actions/upload-artifact@v4
         with:
           name: real-esrgan-gui-build-${{ matrix.platform }}
-          path: |
-            build/${{ matrix.platform }}/runner/Release/
-            build/${{ matrix.platform }}/runner/Release/**/*
+          path: build/${{ matrix.platform }}/runner/Release/
